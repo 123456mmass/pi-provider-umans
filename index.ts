@@ -69,7 +69,13 @@ const FALLBACK_MODELS: ProviderModelConfig[] = [
 function mapUmansModel(id: string, info: any): ProviderModelConfig {
   const caps = info.capabilities ?? {};
   const supportsVision = caps.supports_vision === true;
-  const rawMaxTokens = caps.max_tokens ?? 8192;
+
+  // recommended_max_tokens = max output tokens. Fall back to 65000 if missing or < 8192.
+  const recommendedMax = caps.recommended_max_tokens;
+  const maxTokens: number =
+    typeof recommendedMax === "number" && recommendedMax >= 8192
+      ? recommendedMax
+      : 65000;
 
   return {
     id,
@@ -77,7 +83,7 @@ function mapUmansModel(id: string, info: any): ProviderModelConfig {
     reasoning: true,
     input: supportsVision ? ["text", "image"] : ["text"],
     contextWindow: caps.context_window ?? 200000,
-    maxTokens: rawMaxTokens <= 8192 ? 65000 : Math.max(rawMaxTokens, 50000),
+    maxTokens,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     compat: { supportsDeveloperRole: false, supportsReasoningEffort: false },
   };
